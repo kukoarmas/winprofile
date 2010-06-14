@@ -10,7 +10,7 @@ begin
     gem.email = "kuko@canarytek.com"
     gem.homepage = "http://github.com/kukoarmas/winprofile"
     gem.authors = ["Miguel Armas"]
-    gem.add_development_dependency "thoughtbot-shoulda", ">= 0"
+    gem.add_development_dependency "shoulda", ">= 0"
     # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
   end
   Jeweler::GemcutterTasks.new
