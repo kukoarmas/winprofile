@@ -7,7 +7,8 @@
 # ALL THE REST -> U:\.windows_settings\
 
 
-require 'lib/winprofile'
+require 'rubygems'
+require 'winprofile'
 
 require 'optparse'
 require 'fileutils'
@@ -15,7 +16,10 @@ require 'fileutils'
 # Samba profiles defaults
 @profiles="/home/samba/profiles"
 # User homes default
-@home="/home"
+@homes="/home"
+
+@verbose=false
+@debug=false
 
 # Command
 @cmd="show"
@@ -27,42 +31,45 @@ def redirect
 
 	puts "Redirecting Desktop"
 	p.redirect_folder('Desktop','U:\\.windows_settings\\Escritorio')
-	p.redirect_folder('Desktop','U:\\.windows_settings\\Escritorio')
 	puts "Redirecting AppData"
 	p.redirect_folder('AppData','U:\\.windows_settings\\Datos de programa')
-	p.redirect_folder('AppData','U:\\.windows_settings\\Datos de programa')
 	puts "Redirecting Personal"
-	p.redirect_folder('Personal','U:\\Mis documentos')
 	p.redirect_folder('Personal','U:\\Mis documentos')
 end
 
 def move
-	puts "Creating #{@home}/#{@user}/.windows_settings"
-	FileUtils.makedirs "#{@home}/#{@user}/.windows_settings"
+	puts "Creating #{@homes}/#{@user}/.windows_settings"
+	FileUtils.makedirs "#{@homes}/#{@user}/.windows_settings"
 	puts "Moving dirs"
-	puts "#{@home}/samba/profiles/#{@user}/Mis\ documentos -> #{@home}/#{@user}/Mis\ documentos"
-	FileUtils.mv "#{@home}/samba/profiles/#{@user}/Mis\ documentos","#{@home}/#{@user}/Mis\ documentos"
+	puts "#{@homes}/samba/profiles/#{@user}/Mis\ documentos -> #{@homes}/#{@user}/Mis\ documentos"
+	FileUtils.mv "#{@homes}/samba/profiles/#{@user}/Mis\ documentos","#{@homes}/#{@user}/Mis\ documentos"
 
-	puts "#{@home}/samba/profiles/#{@user}/Escritorio -> #{@home}/#{@user}/.windows_settings/Escritorio"
-	FileUtils.mv "#{@home}/samba/profiles/#{@user}/Escritorio","#{@home}/#{@user}/.windows_settings/Escritorio"
+	puts "#{@homes}/samba/profiles/#{@user}/Escritorio -> #{@homes}/#{@user}/.windows_settings/Escritorio"
+	FileUtils.mv "#{@homes}/samba/profiles/#{@user}/Escritorio","#{@homes}/#{@user}/.windows_settings/Escritorio"
 
-	puts "#{@home}/samba/profiles/#{@user}/Datos de programa -> #{@home}/#{@user}/.windows_settings/Datos de programa"
-	FileUtils.mv "#{@home}/samba/profiles/#{@user}/Datos de programa","#{@home}/#{@user}/.windows_settings/Datos de programa"
+	puts "#{@homes}/samba/profiles/#{@user}/Datos de programa -> #{@homes}/#{@user}/.windows_settings/Datos de programa"
+	FileUtils.mv "#{@homes}/samba/profiles/#{@user}/Datos de programa","#{@homes}/#{@user}/.windows_settings/Datos de programa"
 end
 
 app = Hash.new
 
 options = OptionParser.new do |opts|
   opts.on("--debug", "Debug. No action. (verbose=true)") do |opt|
-    $noop=true
-    $verbose=true
-    $expect_verbose=true
+    @noop=true
+    @verbose=true
+    @debug=true
   end
   opts.on("--verbose", "Be verbose") do |opt|
-    $verbose=true
+    @verbose=true
   end
   opts.on("--user [ARG]", "User profile to change") do |opt|
     @user=opt
+  end
+  opts.on("--profiles [ARG]", "User profiles directory (default: /home/samba/profiles)") do |opt|
+    @profiles=opt
+  end
+  opts.on("--homes [ARG]", "User homes (default: /home)") do |opt|
+    @homes=opt
   end
   opts.on("--version", "Print version and exit") do |opt|
     puts "version #{winprofile::VERSION}"
@@ -87,6 +94,7 @@ end
 
 case @cmd
 	when "show"
+    puts "Reading from #{@profiles}/#{@user}" if @debug
 		p=WinProfile.new("#{@profiles}/#{@user}/NTUSER.DAT")
 		puts "Personal Folders for #{@user}"
 		p.verbose=true

@@ -1,5 +1,6 @@
 
-require 'lib/winreg'
+require 'rubygems'
+require 'winreg'
 
 class WinProfile
   attr_accessor :file, :debug, :verbose
