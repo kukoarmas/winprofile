@@ -2,8 +2,12 @@
 require 'rubygems'
 require 'winreg'
 
+#
+# WinProfile
+#
 class WinProfile
-  attr_accessor :file, :debug, :verbose
+  attr_accessor :file, :debug, :verbose, :homes, :profiles
+  attr_reader :folders
 
   # Base regkey for folder redirection
   FOLDERS_BASE='Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders'
@@ -30,14 +34,34 @@ class WinProfile
           ] 
 
 
-  def initialize(file)
-    @file = file
+  def initialize(user=nil,profiles="/home/samba/profiles",homes="/home")
+    # Defaults
+    @profiles = profiles
+    @homes = homes
+    @folders = FOLDER_DEFAULTS
+
+    # If user=nil don't check existence, late initialization
+    if user != nil
+      # HKLU hive file
+      @file = "#{@profiles}/#{user}/NTUSER.DAT"
+      raise "Invalid profile: #{@file}" unless File.exists? @file
+    end
+  end
+
+  # Set the user whose profile we want to change
+  def user=(user)
+    # HKLU hive file
+    @file = "#{@profiles}/#{user}/NTUSER.DAT"
+
+    raise "Invalid profile: #{@file}" unless File.exists? @file
   end
 
   # Show folder redirection status for a given folder
   def show_folder(folder)
-    @localtion=nil
+    @location=nil
+
     w=WinReg.new(@file)
+    w.debug=@debug
 
     FOLDER_DEFAULTS.each do |key|
       if key[:name] == folder
@@ -52,6 +76,7 @@ class WinProfile
   def show_folders
 
     w=WinReg.new(@file)
+    w.debug=@debug
 
     FOLDER_DEFAULTS.each do |key|
       @location = w.read_key(FOLDERS_BASE+'\\'+key[:name])
@@ -61,10 +86,11 @@ class WinProfile
 
   # Redirects a given user folders to a dir
   def redirect_folder(folder,dir)
+
     w=WinReg.new(@file)
+    w.debug=@debug
 
     w.write_key(FOLDERS_BASE+'\\'+folder,dir)
-
 
   end
 
@@ -72,6 +98,7 @@ class WinProfile
   def redirect_folders(dir)
 
     w=WinReg.new(@file)
+    w.debug=@debug
     FOLDER_DEFAULTS.each do |key|
       w.write_key(FOLDERS_BASE+'\\'+key[:name],dir+'\\'+key[:dir])
     end
@@ -84,23 +111,24 @@ class WinProfile
       @folder=dir+"/"+key[:dir]
       @folder.gsub!('\\','/')
       if not File.directory? @folder
-        puts "FOOOD FIGHT!!" if @debug
         File.makedirs @folder
       end
     end
 
   end
 
-  # Copy ALL profile folders to a new destination
-  def copy_folders(orig,dest)
+  # Move ALL profile folders to a new destination
+  def move_folders(orig,dest)
     
-    FileUtils.cp_r orig,dest,:preserve=>true
+    puts "Moving #{orig} ->  #{dest}" if @verbose
+    FileUtils.mv orig,dest
   end
 
-  # Copy a given profile folder to a new destination
-  def copy_folder(folder,orig,dest)
-
-    puts "Copying #{orig}/#{key[:dir]} ->  #{dest}/#{key[:dir]}" if @verbose
+  # Move a given profile folder to a new destination
+  def move_folder(folder,orig,dest)
+    
+    puts "Moving #{orig}/#{key[:dir]} ->  #{dest}/#{key[:dir]}" if @verbose
+    FileUtils.mv "#{orig}/#{key[:dir]}", "#{dest}/#{key[:dir]}"
 
   end
 
@@ -108,6 +136,7 @@ class WinProfile
   def reset_default
     
     w=WinReg.new(@file)
+    w.debug=@debug
     FOLDER_DEFAULTS.each do |key|
       w.write_key(FOLDERS_BASE+'\\'+key[:name],'%USERPROFILE%\\'+key[:dir])
     end

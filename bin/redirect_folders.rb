@@ -25,9 +25,9 @@ require 'fileutils'
 @cmd="show"
 
 def redirect
-	p=WinProfile.new("#{@profiles}/#{@user}/NTUSER.DAT")
-	p.debug=true
-	p.verbose=true
+  p=WinProfile.new(@user,@profiles,@homes)
+	p.debug=@debug
+	p.verbose=@verbose
 
 	puts "Redirecting Desktop"
 	p.redirect_folder('Desktop','U:\\.windows_settings\\Escritorio')
@@ -94,10 +94,11 @@ end
 
 case @cmd
 	when "show"
-    puts "Reading from #{@profiles}/#{@user}" if @debug
-		p=WinProfile.new("#{@profiles}/#{@user}/NTUSER.DAT")
+		p=WinProfile.new(@user,@profiles,@homes)
 		puts "Personal Folders for #{@user}"
+		#p.verbose=@verbose
 		p.verbose=true
+		p.debug=@debug
 		p.show_folders
 	when "redirect"
 		redirect
