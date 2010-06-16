@@ -12,6 +12,9 @@ class WinProfile
   # Base regkey for folder redirection
   FOLDERS_BASE='Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders'
 
+  # Default base for profile folders (its a Windows default)
+  PROFILE_BASE='%USERPROFILE%'
+
   # List of user folder redirection regkeys
   FOLDER_DEFAULTS=[
           {:name => "AppData", :dir => 'Datos de programa' },
@@ -38,7 +41,7 @@ class WinProfile
     # Defaults
     @profiles = profiles
     @homes = homes
-    @folders = FOLDER_DEFAULTS
+    @folders = Array.new()
 
     # If user=nil don't check existence, late initialization
     if user != nil
@@ -54,6 +57,42 @@ class WinProfile
     @file = "#{@profiles}/#{user}/NTUSER.DAT"
 
     raise "Invalid profile: #{@file}" unless File.exists? @file
+  end
+
+  # Stage a folder to be changed to the given base. The changes will be written on commit method
+  def change_folder(folder=nil, base=nil, dir=nil)
+ 
+    # Set defaults if parameters not given
+    base=PROFILE_BASE unless base
+
+    FOLDER_DEFAULTS.each do |key|
+      if key[:name] == folder
+        puts "Found key: #{key[:name]}" if @debug
+        # Ok key found
+        dir=key[:dir] unless dir
+        # Add it to stage
+        @folders.push({ :name => folder, :value => base+'\\'+dir })
+      end
+    end
+    @folders
+  end
+
+  # Show if a folder is staged for change. Returns the staged value
+  def show_changed_folder(folder)
+    @location=nil
+
+    @folders.each do |key|
+      if key[:name] == folder
+        @location = key[:value]
+        puts "#{key[:name]} -> #{@location}" if @verbose
+      end
+    end
+    @location
+  end
+
+  # Show all folders staged for change. Returns @folders
+  def show_changed_folders
+    @folders
   end
 
   # Show folder redirection status for a given folder
@@ -138,8 +177,20 @@ class WinProfile
     w=WinReg.new(@file)
     w.debug=@debug
     FOLDER_DEFAULTS.each do |key|
-      w.write_key(FOLDERS_BASE+'\\'+key[:name],'%USERPROFILE%\\'+key[:dir])
+      w.write_key(FOLDERS_BASE+'\\'+key[:name],PROFILE_BASE+'\\'+key[:dir])
     end
+  end 
+
+  # Commit (write) changes to hive file. 
+  # NOTE: You should ALWAYS commit, or you will lose the changes
+  def commit
+    # Compose changes array
+    @changes=Array.new
+    @folders.each do |key|
+      @changes.push({ :name => FOLDERS_BASE+'\\'+key[:name], :value => key[:value] })
+    end
+    w=WinReg.new(@file,@debug)
+    w.write_keys(@changes)
   end 
 
 end

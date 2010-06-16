@@ -1,6 +1,8 @@
 = winprofile
 
-Description goes here.
+WinProfile allows you to manage Windows user profiles from your server
+
+WARNING: It's not even considered pre-alfa quality code. Don't use it, or you WILL hate me
 
 == Note on Patches/Pull Requests
  

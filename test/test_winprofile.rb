@@ -37,13 +37,13 @@ class TestWinProfile < Test::Unit::TestCase
   context "a WinProfile instance" do
 
     setup do
-      File.copy "test/sample_profile/NTUSER.DAT","test/NTUSER.DAT"
-      @winprofile=WinProfile.new("sample_profile","test")
+      File.copy "test/sample_profile/NTUSER.DAT","test/tmp/NTUSER.DAT"
+      @winprofile=WinProfile.new("tmp","test")
       @winprofile.verbose=false
     end
 
-    should "initialize folders same as FOLDER_DEFAULTS" do
-      assert_same_elements WinProfile::FOLDER_DEFAULTS,@winprofile.folders
+    should "initialize folders as empty array" do
+      assert_same_elements [],@winprofile.folders
     end    
 
     context "when asked for the 'Personal' folder key" do
@@ -88,6 +88,48 @@ class TestWinProfile < Test::Unit::TestCase
       #  assert_same_elements @sample_profile,Dir.entries("test/tmp/sample_profile")
       #end
     #end
+
+    context 'when staging multiple key changes' do
+      setup do
+        File.copy "test/sample_profile/NTUSER.DAT","test/tmp/NTUSER.DAT"
+        @winprofile=WinProfile.new("tmp","test")
+      end
+
+      should "assume correct base when not given" do
+        @winprofile.change_folder('Personal',nil,'Mis documentos')
+        assert_equal WinProfile::PROFILE_BASE+'\\'+'Mis documentos', @winprofile.show_changed_folder('Personal')
+      end
+      should "assume correct dir when not given" do
+        @winprofile.change_folder('Personal',WinProfile::PROFILE_BASE,nil)
+        assert_equal WinProfile::PROFILE_BASE+'\\'+'Mis documentos', @winprofile.show_changed_folder('Personal')
+      end
+      should "assume correct base and dir when none given" do
+        @winprofile.change_folder('Personal')
+        assert_equal WinProfile::PROFILE_BASE+'\\'+'Mis documentos', @winprofile.show_changed_folder('Personal')
+      end
+      should "add valid folders to @folders" do
+        @winprofile.change_folder('Personal','U:')
+        @winprofile.change_folder('AppData','U:\\.windows_settings')
+        assert_equal 'U:\\Mis documentos', @winprofile.show_changed_folder('Personal')
+        assert_equal 'U:\\.windows_settings\Datos de programa', @winprofile.show_changed_folder('AppData')
+      end
+      should "not add nonexistent folders" do
+        @winprofile.change_folder('NONEXISTENT','U:')
+        assert_same_elements [], @winprofile.folders
+      end
+      should "read the same info from hive if we have not commited" do
+        @before=@winprofile.show_folder('AppData')
+        @winprofile.change_folder('AppData','NONE')
+        assert_equal @before, @winprofile.show_folder('AppData')
+      end
+      should "read written info when we commit" do
+        @winprofile.change_folder('Personal','U:')
+        @winprofile.change_folder('AppData','U:\\.windows_settings')
+        @winprofile.commit
+        assert_equal 'U:\\Mis documentos', @winprofile.show_folder('Personal')
+        assert_equal 'U:\\.windows_settings\Datos de programa', @winprofile.show_folder('AppData')
+      end
+    end
 
     context "when moving profile folders" do
       setup do

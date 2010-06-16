@@ -30,11 +30,12 @@ def redirect
 	p.verbose=@verbose
 
 	puts "Redirecting Desktop"
-	p.redirect_folder('Desktop','U:\\.windows_settings\\Escritorio')
+	p.change_folder('Desktop','U:\\.windows_settings')
 	puts "Redirecting AppData"
-	p.redirect_folder('AppData','U:\\.windows_settings\\Datos de programa')
+	p.change_folder('AppData','U:\\.windows_settings')
 	puts "Redirecting Personal"
-	p.redirect_folder('Personal','U:\\Mis documentos')
+	p.change_folder('Personal','U:')
+  p.commit
 end
 
 def move
